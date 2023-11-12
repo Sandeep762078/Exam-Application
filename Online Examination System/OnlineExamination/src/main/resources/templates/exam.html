@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Examination Paper Checking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            background-color: #3498db;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.1);
+        }
+
+        div {
+            margin: 10px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #submitBtn {
+            background-color: #3498db;
+            color: #fff;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #submitBtn:hover {
+            background-color: #2980b9;
+        }
+
+        #processing {
+            display: none;
+            font-weight: bold;
+            font-size: 20px;
+            color: #3498db;
+        }
+
+        #result {
+            display: none;
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        #passMessage {
+            display: none;
+            font-size: 20px;
+            color: green;
+        }
+
+        #failMessage {
+            display: none;
+            font-size: 20px;
+            color: red;
+        }
+
+        .fileUploaded {
+            display: none;
+            font-size: 20px;
+            color: green;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #3498db;
+            color: #fff;
+        }
+               button {
+            background-color: #3498db;
+            color: #fff;
+            padding: 14px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Examination Paper Checking</h1>
+    <a href="http://localhost:8080/teacher-login">Logout</a>
+    <div class="container">
+        <div>
+            <label for="modelAnswer">Upload Model Answer (DOC):</label>
+            <input type="file" id="modelAnswer" accept=".doc, .docx">
+            <div class="fileUploaded" id="modelUploaded">File uploaded successfully</div>
+        </div>
+
+        <div>
+            <label for="studentAnswer">Upload Student Answer (DOC):</label>
+            <input type="file" id="studentAnswer" accept=".doc, .docx">
+            <div class="fileUploaded" id="studentUploaded">File uploaded successfully</div>
+        </div>
+
+        <button id="submitBtn" onclick="checkPapers()">Submit</button>
+
+        <button id="addBtn" onclick="addScorecardPortal()">Add Scorecard</button>
+
+        <div id="processing">Processing...</div>
+
+        <div id="result">
+            <table>
+                <tr>
+                    <th>Total Percentage</th>
+                </tr>
+                <tr>
+                    <td id="totalPercentage">0%</td>
+                </tr>
+            </table>
+        </div>
+
+        <div id="passMessage">Congratulations, you passed!</div>
+
+        <div id="failMessage">You failed.</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script>
+        function addScorecardPortal() {
+
+        window.location.href = 'http://localhost:8080/scorecard';
+    }
+    function checkPapers() {
+        const modelAnswerFile = document.getElementById('modelAnswer').files[0];
+        const studentAnswerFile = document.getElementById('studentAnswer').files[0];
+
+        if (modelAnswerFile && studentAnswerFile) {
+            document.getElementById('modelUploaded').style.display = 'none';
+            document.getElementById('studentUploaded').style.display = 'none';
+            document.getElementById('submitBtn').style.display = 'none';
+            document.getElementById('processing').style.display = 'block';
+            setTimeout(() => {
+                readAndCheckPapers(modelAnswerFile, studentAnswerFile);
+            }, 2000);
+        }
+    }
+
+    function readAndCheckPapers(modelAnswerFile, studentAnswerFile) {
+        const modelAnswerReader = new FileReader();
+        modelAnswerReader.onload = function(event) {
+            const modelAnswerText = event.target.result;
+
+            const studentAnswerReader = new FileReader();
+            studentAnswerReader.onload = function(studentEvent) {
+                const studentAnswerText = studentEvent.target.result;
+
+                const totalPercentage = calculatePercentage(modelAnswerText, studentAnswerText);
+
+                document.getElementById('processing').style.display = 'none';
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('totalPercentage').textContent = totalPercentage + '%';
+
+                if (totalPercentage >= 35) {
+                    document.getElementById('passMessage').style.display = 'block';
+                } else {
+                    document.getElementById('failMessage').style.display = 'block';
+                }
+            };
+
+            mammoth.extractRawText({ arrayBuffer: studentAnswerFile }).then(function(result) {
+                studentAnswerReader.readAsText(new Blob([result.value], { type: "text/plain" }));
+            });
+        };
+
+        mammoth.extractRawText({ arrayBuffer: modelAnswerFile }).then(function(result) {
+            modelAnswerReader.readAsText(new Blob([result.value], { type: "text/plain" }));
+        });
+    }
+
+    function calculatePercentage(modelAnswer, studentAnswer) {
+        const modelKeywords = modelAnswer.split(' ');
+        const studentWords = studentAnswer.split(' ');
+
+        const keywordMatch = modelKeywords.filter(keyword => studentWords.includes(keyword));
+        const sentenceMatch = modelAnswer.split('.').filter(sentence => studentAnswer.split('.').includes(sentence));
+        const meaningfulSentenceMatch = modelAnswer.split('.').filter(sentence => {
+            return studentAnswer.split('.').includes(sentence) && sentence.trim().length > 5;
+        });
+
+        const totalMatches = keywordMatch.length + sentenceMatch.length + meaningfulSentenceMatch.length;
+        const totalPercentage = Math.min((totalMatches / (modelKeywords.length + modelAnswer.split('.').length)) * 100, 100);
+        return totalPercentage.toFixed(2);
+    }
+    </script>
+</body>
+</html>

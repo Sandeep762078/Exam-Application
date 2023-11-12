@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="3;url=/student-score">
+    <title>Success</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="container mt-5">
+    <h2 class="mb-4">Success!</h2>
+    <p>Welcome, <span th:text="${student.username}"></span>! You have successfully logged in or signed up.</p>
+    <a href="http://localhost:8080/login">Logout</a>
+</div>
+</body>
+</html>
